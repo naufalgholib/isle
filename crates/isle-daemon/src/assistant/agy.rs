@@ -64,8 +64,8 @@ const VERSION_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 /// (see sign_in.rs). Onboarding and the project id are shared too: agy refuses to start without them.
 fn link_login(user: &Path, isle: &Path) {
     super::sign_in::share(&user.join(LOGIN), &isle.join(LOGIN));
-    super::sign_in::share(&user.join(ONBOARDING), &isle.join(ONBOARDING));
-    super::sign_in::share(&user.join(DEFAULT_PROJECT), &isle.join(DEFAULT_PROJECT));
+    super::sign_in::link(&user.join(ONBOARDING), &isle.join(ONBOARDING));
+    super::sign_in::link(&user.join(DEFAULT_PROJECT), &isle.join(DEFAULT_PROJECT));
 }
 
 /// Whether the user signed in to agy: its token file, or `onboarding.json` once signed in with the keyring.
@@ -740,6 +740,25 @@ mod tests {
             user.join(LOGIN)
         );
         assert_eq!(std::fs::read_to_string(user.join(LOGIN)).unwrap(), "token");
+        for (path, original) in [(ONBOARDING, "onboarding"), (DEFAULT_PROJECT, "project")] {
+            let real = user.join(path);
+            let linked = isle.join(path);
+            std::fs::create_dir_all(real.parent().unwrap()).unwrap();
+            std::fs::write(&real, original).unwrap();
+            std::fs::File::options()
+                .write(true)
+                .open(&real)
+                .unwrap()
+                .set_modified(old)
+                .unwrap();
+            link_login(&user, &isle);
+            assert_eq!(std::fs::read_link(&linked).unwrap(), real);
+            std::fs::remove_file(&linked).unwrap();
+            std::fs::write(&linked, "replacement").unwrap();
+            link_login(&user, &isle);
+            assert_eq!(std::fs::read_to_string(&real).unwrap(), original);
+            assert_eq!(std::fs::read_link(&linked).unwrap(), real);
+        }
         std::fs::remove_dir_all(root).unwrap();
     }
 
