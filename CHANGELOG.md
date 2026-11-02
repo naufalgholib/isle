@@ -19,6 +19,7 @@ All notable changes to Isle are listed here. The format follows
 
 ### Fixed
 
+- Scrolling AI usage no longer skips providers when a wheel click or swipe is reported twice.
 - Antigravity counts as signed in when `agy` keeps its token in the keyring and has finished its
   onboarding, as newer `agy` versions do. Before, only its token file was read, so the assistant and
   AI usage missed a keyring sign-in.
